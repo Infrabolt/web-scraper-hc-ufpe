@@ -46,13 +46,18 @@ def processar_artigos_e_salvar(termos_de_busca):
         print(f"🔍 Buscando artigos para: {termo}")
         artigos = buscar_artigos_google_academico(termo)
         for artigo in artigos:
-            salvar_artigo(
-                titulo=artigo["titulo"],
-                autores=artigo["autores"],
-                resumo=artigo["resumo"],
-                data_publicacao=artigo["data_publicacao"],
-                link=artigo["link"]
-            )
+            # salvar_artigo(
+            #     titulo=artigo["titulo"],
+            #     autores=artigo["autores"],
+            #     resumo=artigo["resumo"],
+            #     data_publicacao=artigo["data_publicacao"],
+            #     link=artigo["link"]
+            # )
+            print(artigo["titulo"] + "\n",
+                  artigo["autores"],"\n",
+                  artigo["link"]
+                  )
+    
 
 # Exemplo de termos
 termos = [
