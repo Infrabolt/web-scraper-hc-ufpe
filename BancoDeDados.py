@@ -1,19 +1,25 @@
-import sqlite3
 
-def CriarBanco():
-    banco = sqlite3.connect("Artigos_HCufpe.db")
+import pandas as pd
 
-    cursor = banco.cursor()
 
-    cursor.execute("SELECT 1")  # só testando a conexão
+# Exemplo de lista com os dados coletados
+Artigos = [
+    {
+        "titulo": "titulo",
+        "autores": "autores",
+        "resumo": "resumo",
+        "data_publicacao": "data_publicacao",
+        "link": "link"
+    }
+    
+]
+# Cria o DataFrame
+df = pd.DataFrame(Artigos)
 
-    cursor.execute("CREATE TABLE Artigos(Titulo text, Autores text, Resumo text, Data de publicação integer, link de acesso text)")
+# Exporta para Excel
+df.to_excel("Artigos.xlsx", index=False)
 
-    # excluir duplicatas
-    cursor.execute("DELETE FROM Artigos WHERE rowid NOT IN (SELECT MIN(rowid) FROM Artigos GROUP BY Titulo, Autores, Resumo, [Data de publicação], [link de acesso])")
 
-    banco.commit()
-    banco.close()
 
-def salvar_artigo(titulo, autores, resumo, data_publicacao, link):
-    return
+
+    
