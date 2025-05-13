@@ -1,7 +1,10 @@
 import requests
+import pandas as pd
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
 from BancoDeDados import salvar_artigo
+
+df = pd.read_excel("Termos de Busca.xlsx")
 
 SCOPUS_API_KEY = "c3518a1d259d7b6709aacc9a660c2980"
 
@@ -110,11 +113,5 @@ def processar_artigos_e_salvar(termos_de_busca):
                   artigo["link"], "\n")
 
 # Exemplo de termos
-termos = [
-        "Hospital das Clínicas - UFPE",
-        "HC UFPE",
-        "Universidade Federal de Pernambuco hospital",
-        "Universidade Federal de Pernambuco",
-        "pesquisadores HC UFPE"
-    ]
+termos = df.iloc[:, 0].dropna().astype(str).tolist()
 processar_artigos_e_salvar(termos)
