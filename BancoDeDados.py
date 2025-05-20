@@ -18,8 +18,3 @@ def salvar_artigo(titulo, autores, resumo, data_publicacao, link):
 
     # Exporta para Excel
     df.to_excel("Artigos.xlsx", index=False)
-
-
-
-
-    

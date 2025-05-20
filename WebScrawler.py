@@ -2,7 +2,6 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode
-from BancoDeDados import salvar_artigo
 
 df = pd.read_excel("Termos de Busca.xlsx")
 
@@ -11,6 +10,7 @@ SCOPUS_API_KEY = "c3518a1d259d7b6709aacc9a660c2980"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 }
+
 
 def buscar_artigos_google_academico(termo_pesquisa, limite=5):
     base_url = "https://scholar.google.com/scholar"
@@ -35,8 +35,8 @@ def buscar_artigos_google_academico(termo_pesquisa, limite=5):
                 "titulo": titulo,
                 "autores": autores_info,
                 "resumo": resumo,
-                "data_publicacao": "Desconhecida",  # Google Scholar não fornece a data diretamente
-                "link": link
+                "data_publicacao": "Desconhecida",
+                "link": link,
             }
 
             artigos.append(artigo)
@@ -47,9 +47,8 @@ def buscar_artigos_google_academico(termo_pesquisa, limite=5):
     return artigos
 
 
-            
-def buscar_artigos_scopus(termo_pesquisa, limite=5): #LIMITE PARA USAR COMO EXEMPLIFICAÇÃO
-    print(f"🔍 Buscando por: {termo_pesquisa}")
+def buscar_artigos_scopus(termo_pesquisa, limite=5):
+    print(f"🔍 Buscando no Scopus por: {termo_pesquisa}")
     
     base_url = "https://api.elsevier.com/content/search/scopus"
     headers = {
@@ -72,25 +71,19 @@ def buscar_artigos_scopus(termo_pesquisa, limite=5): #LIMITE PARA USAR COMO EXEM
             "autores": item.get("dc:creator", "Autor(es) indisponíveis"),
             "resumo": item.get("dc:description", "Resumo indisponível"),
             "data_publicacao": item.get("prism:coverDate", "Data desconhecida"),
-            "link": item.get("prism:doi", "Link indisponível")
+            "link": f'https://doi.org/{item["prism:doi"]}' if "prism:doi" in item else "Link indisponível",
         }
-        if artigo["link"] != "Link indisponível":
-            artigo["link"] = f'https://doi.org/{artigo["link"]}'
         artigos.append(artigo)
 
     return artigos
-    
-#Busca Artigos no SciELO:
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
+
 
 def buscar_artigos_scielo(lista_termos, max_resultados=5):
     base_url = "https://search.scielo.org/"
     todos_resultados = []
 
     for termo in lista_termos:
-        print(f"\n🔍 Buscando por: '{termo}'")
+        print(f"\n🔍 Buscando no SciELO por: '{termo}'")
         params = {
             "q": termo,
             "lang": "pt",
@@ -117,10 +110,9 @@ def buscar_artigos_scielo(lista_termos, max_resultados=5):
                 pass
 
             todos_resultados.append({
-                "termo_busca": termo,
                 "titulo": titulo,
                 "autores": autores,
-                "data": data,
+                "data_publicacao": data,
                 "resumo": resumo,
                 "link": link
             })
@@ -129,52 +121,28 @@ def buscar_artigos_scielo(lista_termos, max_resultados=5):
 
 
 def processar_artigos_e_salvar(termos_de_busca):
+    todos_artigos = []
+
     for termo in termos_de_busca:
-        print(f"🔍 Buscando artigos para: {termo}")
+        print(f"\n=====================\n📚 Termo: {termo}")
         
-        artigos = buscar_artigos_google_academico(termo)
-        for artigo in artigos:
-            salvar_artigo(
-                titulo=artigo["titulo"],
-                autores=artigo["autores"],
-                resumo=artigo["resumo"],
-                data_publicacao=artigo["data_publicacao"],
-                link=artigo["link"]
-            )
-            # print(artigo["titulo"] + "\n",
-            #       artigo["autores"],"\n",
-            #       artigo["link"]
-            #       )
-        
+        # Google Scholar
+        artigos_google = buscar_artigos_google_academico(termo)
+        todos_artigos.extend(artigos_google)
+
+        # Scopus
         artigos_scopus = buscar_artigos_scopus(termo)
-        for artigo in artigos_scopus:
-            salvar_artigo(
-                titulo=artigo["titulo"],
-                autores=artigo["autores"],
-                resumo=artigo["resumo"],
-                data_publicacao=artigo["data_publicacao"],
-                link=artigo["link"]
-            )
-            # print(artigo["titulo"], "\n",
-            #       artigo["autores"], "\n",
-            #       artigo["link"], "\n")
-        artigos_scielo = buscar_artigos_scielo(termo)
-        for artigo in artigos_scielo:
-            salvar_artigo(
-                titulo=artigo["titulo"],
-                autores=artigo["autores"],
-                resumo=artigo["resumo"],
-                data_publicacao=artigo["data_publicacao"],
-                link=artigo["link"]
-            )
-            print(artigo["titulo"], "\n",
-                  artigo["autores"], "\n",
-                  artigo["link"], "\n")
+        todos_artigos.extend(artigos_scopus)
+
+        # SciELO
+        artigos_scielo = buscar_artigos_scielo([termo])
+        todos_artigos.extend(artigos_scielo)
+
+    df = pd.DataFrame(todos_artigos)
+    df.to_excel("Artigos.xlsx", index=False)
+    print("✅ Arquivo 'Artigos.xlsx' salvo com sucesso.")
 
 
-
-# Exemplo de termos
+# Lê os termos da planilha
 termos = df.iloc[:, 0].dropna().astype(str).tolist()
 processar_artigos_e_salvar(termos)
-
-
