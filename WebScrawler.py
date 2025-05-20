@@ -80,6 +80,53 @@ def buscar_artigos_scopus(termo_pesquisa, limite=5): #LIMITE PARA USAR COMO EXEM
 
     return artigos
     
+#Busca Artigos no SciELO:
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+}
+
+def buscar_artigos_scielo(lista_termos, max_resultados=5):
+    base_url = "https://search.scielo.org/"
+    todos_resultados = []
+
+    for termo in lista_termos:
+        print(f"\n🔍 Buscando por: '{termo}'")
+        params = {
+            "q": termo,
+            "lang": "pt",
+            "count": max_resultados,
+        }
+
+        resposta = requests.get(base_url, params=params)
+        soup = BeautifulSoup(resposta.text, "html.parser")
+
+        for artigo in soup.select(".item"):
+            titulo = artigo.select_one(".title").text.strip() if artigo.select_one(".title") else "Sem título"
+            autores = artigo.select_one(".authors").text.strip() if artigo.select_one(".authors") else "Desconhecidos"
+            data = artigo.select_one(".date").text.strip() if artigo.select_one(".date") else "Data não encontrada"
+            link = artigo.select_one("a")["href"] if artigo.select_one("a") else "Sem link"
+
+            resumo = "Resumo não encontrado"
+            try:
+                art_resposta = requests.get(link)
+                art_soup = BeautifulSoup(art_resposta.text, "html.parser")
+                resumo_tag = art_soup.select_one("div.abstract, div#abstract")
+                if resumo_tag:
+                    resumo = resumo_tag.text.strip()
+            except:
+                pass
+
+            todos_resultados.append({
+                "termo_busca": termo,
+                "titulo": titulo,
+                "autores": autores,
+                "data": data,
+                "resumo": resumo,
+                "link": link
+            })
+
+    return todos_resultados
+
 
 def processar_artigos_e_salvar(termos_de_busca):
     for termo in termos_de_busca:
@@ -94,13 +141,25 @@ def processar_artigos_e_salvar(termos_de_busca):
                 data_publicacao=artigo["data_publicacao"],
                 link=artigo["link"]
             )
-            print(artigo["titulo"] + "\n",
-                  artigo["autores"],"\n",
-                  artigo["link"]
-                  )
+            # print(artigo["titulo"] + "\n",
+            #       artigo["autores"],"\n",
+            #       artigo["link"]
+            #       )
         
         artigos_scopus = buscar_artigos_scopus(termo)
         for artigo in artigos_scopus:
+            salvar_artigo(
+                titulo=artigo["titulo"],
+                autores=artigo["autores"],
+                resumo=artigo["resumo"],
+                data_publicacao=artigo["data_publicacao"],
+                link=artigo["link"]
+            )
+            # print(artigo["titulo"], "\n",
+            #       artigo["autores"], "\n",
+            #       artigo["link"], "\n")
+        artigos_scielo = buscar_artigos_scielo(termo)
+        for artigo in artigos_scielo:
             salvar_artigo(
                 titulo=artigo["titulo"],
                 autores=artigo["autores"],
@@ -112,6 +171,10 @@ def processar_artigos_e_salvar(termos_de_busca):
                   artigo["autores"], "\n",
                   artigo["link"], "\n")
 
+
+
 # Exemplo de termos
 termos = df.iloc[:, 0].dropna().astype(str).tolist()
 processar_artigos_e_salvar(termos)
+
+
